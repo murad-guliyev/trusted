@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { prisma } from "@/lib/db"
 import { Box, Text, Heading, Badge, Stack, Flex } from "@chakra-ui/react"
 import Link from "next/link"

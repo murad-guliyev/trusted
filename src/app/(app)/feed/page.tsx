@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { getAuthSession } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { Box, Text, Heading, Badge, Stack, Flex } from "@chakra-ui/react"
