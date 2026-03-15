@@ -135,15 +135,15 @@ model Connection {
 model ConnectionInvite {
   id          String       @id @default(cuid())
   senderId    String
-  recipientId String
+  recipientId String?
+  token       String?      @unique
+  expiresAt   DateTime?
   status      InviteStatus @default(PENDING)
   sentAt      DateTime     @default(now())
   decidedAt   DateTime?
 
-  sender    User @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
-  recipient User @relation("recipient", fields: [recipientId], references: [id], onDelete: Cascade)
-
-  @@unique([senderId, recipientId])
+  sender    User  @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient User? @relation("recipient", fields: [recipientId], references: [id], onDelete: Cascade)
 }
 
 model Category {

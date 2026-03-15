@@ -1,6 +1,5 @@
+import { getAuthSession } from "@/lib/auth"
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { resolveReportSchema } from "@/lib/validation"
 
@@ -9,7 +8,7 @@ interface Params {
 }
 
 export async function POST(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session?.user?.id || !session.user.isAdmin) {
     return NextResponse.json({ error: "İcazəsiz giriş" }, { status: 403 })
   }

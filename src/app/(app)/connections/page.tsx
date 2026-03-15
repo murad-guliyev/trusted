@@ -40,6 +40,8 @@ export default function ConnectionsPage() {
   const [searchError, setSearchError] = useState("")
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [shareLoading, setShareLoading] = useState(false)
+  const [shareToast, setShareToast] = useState("")
 
   useEffect(() => {
     fetchConnections()
@@ -141,6 +143,32 @@ export default function ConnectionsPage() {
     }
   }
 
+  async function shareInviteLink() {
+    setShareLoading(true)
+    setShareToast("")
+    try {
+      const res = await fetch("/api/connections/invites/link", { method: "POST" })
+      const data = await res.json()
+      const url: string = data.url
+
+      if (navigator.share) {
+        await navigator.share({
+          title: "Trusted-a qoşul",
+          text: "Mən sizi Trusted-a dəvət edirəm — etibarlı insanlardan tövsiyə alın",
+          url,
+        })
+      } else {
+        await navigator.clipboard.writeText(url)
+        setShareToast("Link kopyalandı!")
+        setTimeout(() => setShareToast(""), 3000)
+      }
+    } catch {
+      // User cancelled share or clipboard failed — silent
+    } finally {
+      setShareLoading(false)
+    }
+  }
+
   async function rejectInvite(inviteId: string) {
     setActionLoading(inviteId)
     try {
@@ -160,7 +188,27 @@ export default function ConnectionsPage() {
     <Box p={4} maxW="600px" mx="auto">
       <Heading size="md" mb={4}>Əlaqələr</Heading>
 
-      {/* Search / Invite */}
+      {/* Share Invite Link */}
+      <Box bg="brand.50" rounded="xl" p={4} borderWidth={1} borderColor="brand.200" mb={3}>
+        <Text fontWeight="600" fontSize="sm" mb={1}>Dəvət linki ilə paylaş</Text>
+        <Text fontSize="xs" color="gray.500" mb={3}>
+          WhatsApp, Telegram və ya istənilən kanalda paylaşın. Link 7 gün etibarlıdır.
+        </Text>
+        <Button
+          colorPalette="brand"
+          size="sm"
+          w="full"
+          loading={shareLoading}
+          onClick={shareInviteLink}
+        >
+          🔗 Dəvət linkini paylaş
+        </Button>
+        {shareToast && (
+          <Text fontSize="xs" color="brand.600" mt={2} textAlign="center">{shareToast}</Text>
+        )}
+      </Box>
+
+      {/* Search / Invite by email */}
       <Box bg="white" rounded="xl" p={4} borderWidth={1} borderColor="gray.200" mb={4}>
         <Text fontWeight="600" fontSize="sm" mb={3}>E-poçt ilə dəvət et</Text>
         <form onSubmit={handleSearch}>

@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { getAuthSession } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { Box, Text, Heading, Badge, Stack, Flex } from "@chakra-ui/react"
 import Link from "next/link"
@@ -66,7 +65,7 @@ async function getFeedAsks(userId: string) {
 }
 
 export default async function FeedPage() {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session?.user?.id) return null
 
   const asks = await getFeedAsks(session.user.id)

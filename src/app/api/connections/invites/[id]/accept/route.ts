@@ -1,6 +1,5 @@
+import { getAuthSession } from "@/lib/auth"
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { createInviteAcceptedNotification } from "@/lib/notifications"
 import { trackConnectionInviteAccepted } from "@/lib/analytics"
@@ -10,7 +9,7 @@ interface Params {
 }
 
 export async function POST(_req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "İcazəsiz giriş" }, { status: 401 })
   }
@@ -43,7 +42,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
     await tx.connection.create({
       data: {
         userAId: invite.senderId,
-        userBId: invite.recipientId,
+        userBId: invite.recipientId!, // recipientId is always set for direct invites
         status: "ACTIVE",
       },
     })

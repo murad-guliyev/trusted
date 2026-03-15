@@ -1,6 +1,5 @@
+import { getAuthSession } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { AppShell } from "@/components/layout/AppShell"
 
 export default async function AppLayout({
@@ -8,7 +7,7 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode
 }) {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
 
   if (!session) {
     redirect("/login")

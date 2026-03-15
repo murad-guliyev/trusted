@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { getAuthSession } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { canViewAsk } from "@/lib/permissions"
 import { Box, Text, Heading, Badge, Stack, Flex } from "@chakra-ui/react"
@@ -13,7 +12,7 @@ interface Props {
 }
 
 export default async function AskDetailPage({ params }: Props) {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session?.user?.id) {
     redirect("/login")
   }

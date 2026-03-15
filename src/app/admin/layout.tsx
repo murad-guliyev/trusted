@@ -1,6 +1,5 @@
+import { getAuthSession } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { Box, Heading, Text } from "@chakra-ui/react"
 
 export default async function AdminLayout({
@@ -8,7 +7,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
 
   if (!session?.user?.id || !session.user.isAdmin) {
     redirect("/feed")

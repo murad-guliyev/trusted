@@ -1,4 +1,5 @@
-import { NextAuthOptions } from "next-auth"
+import { NextAuthOptions, Session } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/db"
@@ -37,7 +38,6 @@ export const authOptions: NextAuthOptions = {
 
         if (!passwordMatch) return null
 
-        // Update lastSeenAt
         await prisma.user.update({
           where: { id: user.id },
           data: { lastSeenAt: new Date() },
@@ -68,4 +68,9 @@ export const authOptions: NextAuthOptions = {
       return session
     },
   },
+}
+
+// Typed wrapper — use this everywhere instead of getServerSession directly
+export async function getAuthSession(): Promise<Session | null> {
+  return getServerSession(authOptions) as Promise<Session | null>
 }

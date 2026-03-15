@@ -1,19 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import { signIn } from "next-auth/react"
-import {
-  Box,
-  Button,
-  Input,
-  Stack,
-  Text,
-  Heading,
-  Field,
-} from "@chakra-ui/react"
+import { useSearchParams } from "next/navigation"
+import { Box, Button, Input, Stack, Text, Heading, Field, Spinner, Flex } from "@chakra-ui/react"
 import Link from "next/link"
 
-export default function LoginPage() {
+function LoginForm() {
+  const searchParams = useSearchParams()
+  const inviteToken = searchParams.get("inviteToken")
+
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -23,19 +19,17 @@ export default function LoginPage() {
     e.preventDefault()
     setError("")
     setLoading(true)
-
     try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        callbackUrl: "/feed",
-        redirect: false,
-      })
-
+      const result = await signIn("credentials", { email, password, redirect: false })
       if (result?.error) {
         setError("E-poçt və ya şifrə yanlışdır. Yenidən cəhd edin.")
-      } else if (result?.url) {
-        window.location.href = result.url
+        return
+      }
+      if (inviteToken) {
+        await fetch(`/api/invite/${inviteToken}/accept`, { method: "POST" })
+        window.location.href = `/invite/${inviteToken}`
+      } else {
+        window.location.href = "/feed"
       }
     } catch {
       setError("Xəta baş verdi. Yenidən cəhd edin.")
@@ -45,65 +39,35 @@ export default function LoginPage() {
   }
 
   return (
-    <Box
-      bg="white"
-      p={8}
-      rounded="xl"
-      shadow="md"
-      borderWidth={1}
-      borderColor="gray.200"
-    >
-      <Heading size="lg" mb={6} textAlign="center">
-        Daxil ol
-      </Heading>
+    <Box bg="white" p={8} rounded="xl" shadow="md" borderWidth={1} borderColor="gray.200">
+      <Heading size="lg" mb={6} textAlign="center">Daxil ol</Heading>
+
+      {inviteToken && (
+        <Box bg="brand.50" border="1px" borderColor="brand.200" rounded="md" p={3} mb={4}>
+          <Text fontSize="sm" color="brand.700">
+            Dəvət linki aşkarlandı — daxil olduqdan sonra avtomatik qəbul ediləcək.
+          </Text>
+        </Box>
+      )}
 
       <form onSubmit={handleSubmit}>
         <Stack gap={4}>
           <Field.Root>
             <Field.Label>E-poçt</Field.Label>
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="email@nümunə.az"
-              required
-              autoComplete="email"
-            />
+            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+              placeholder="email@nümunə.az" required autoComplete="email" />
           </Field.Root>
-
           <Field.Root>
             <Field.Label>Şifrə</Field.Label>
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              autoComplete="current-password"
-            />
+            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••" required autoComplete="current-password" />
           </Field.Root>
-
           {error && (
-            <Box
-              bg="red.50"
-              border="1px"
-              borderColor="red.200"
-              rounded="md"
-              p={3}
-            >
-              <Text color="red.600" fontSize="sm">
-                {error}
-              </Text>
+            <Box bg="red.50" border="1px" borderColor="red.200" rounded="md" p={3}>
+              <Text color="red.600" fontSize="sm">{error}</Text>
             </Box>
           )}
-
-          <Button
-            type="submit"
-            colorPalette="brand"
-            loading={loading}
-            loadingText="Giriş edilir..."
-            w="full"
-          >
+          <Button type="submit" colorPalette="brand" loading={loading} loadingText="Giriş edilir..." w="full">
             Daxil ol
           </Button>
         </Stack>
@@ -112,11 +76,20 @@ export default function LoginPage() {
       <Box mt={6} textAlign="center">
         <Text fontSize="sm" color="gray.600">
           Hesabınız yoxdur?{" "}
-          <Link href="/signup" style={{ color: "#6366f1", fontWeight: 600 }}>
+          <Link href={inviteToken ? `/signup?inviteToken=${inviteToken}` : "/signup"}
+            style={{ color: "#6366f1", fontWeight: 600 }}>
             Qeydiyyat
           </Link>
         </Text>
       </Box>
     </Box>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<Flex justify="center"><Spinner /></Flex>}>
+      <LoginForm />
+    </Suspense>
   )
 }

@@ -37,7 +37,7 @@ export async function trackAskCreated(
     data: {
       userId,
       name: "ask_created",
-      properties: props as Record<string, unknown>,
+      properties: props as object,
     },
   })
 }
@@ -68,7 +68,7 @@ export async function trackReplySubmitted(
     data: {
       userId,
       name: "reply_submitted",
-      properties: { askId, ...props } as Record<string, unknown>,
+      properties: { askId, ...props } as object,
     },
   })
 }

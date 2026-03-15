@@ -72,20 +72,19 @@ export default function NewAskPage() {
   }, [])
 
   useEffect(() => {
-    if (visibilityMode === "SELECTED_CONNECTIONS") {
-      async function fetchConnections() {
-        try {
-          const res = await fetch("/api/connections")
-          if (res.ok) {
-            const data = await res.json()
-            setConnections(data.connections ?? [])
-          }
-        } catch {
-          // ignore
+    if (visibilityMode !== "SELECTED_CONNECTIONS") return
+    const fetchConnections = async () => {
+      try {
+        const res = await fetch("/api/connections")
+        if (res.ok) {
+          const data = await res.json()
+          setConnections(data.connections ?? [])
         }
+      } catch {
+        // ignore
       }
-      fetchConnections()
     }
+    fetchConnections()
   }, [visibilityMode])
 
   function toggleAudience(userId: string) {
@@ -176,9 +175,9 @@ export default function NewAskPage() {
 
           <Field.Root invalid={!!fieldErrors.categoryId}>
             <Field.Label>Kateqoriya</Field.Label>
-            <Box as="select"
+            <select
               value={categoryId}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCategoryId(e.target.value)}
+              onChange={(e) => setCategoryId(e.target.value)}
               style={{
                 width: "100%",
                 padding: "8px 12px",
@@ -195,7 +194,7 @@ export default function NewAskPage() {
                   {cat.label}
                 </option>
               ))}
-            </Box>
+            </select>
             {fieldErrors.categoryId && (
               <Field.ErrorText>{fieldErrors.categoryId}</Field.ErrorText>
             )}

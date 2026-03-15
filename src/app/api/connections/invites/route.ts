@@ -1,6 +1,5 @@
+import { getAuthSession } from "@/lib/auth"
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { sendInviteSchema } from "@/lib/validation"
 import { createConnectionInviteNotification } from "@/lib/notifications"
@@ -8,7 +7,7 @@ import { trackConnectionInviteSent } from "@/lib/analytics"
 import { isBlocked } from "@/lib/permissions"
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "İcazəsiz giriş" }, { status: 401 })
   }
@@ -86,7 +85,7 @@ export async function POST(req: Request) {
 }
 
 export async function GET() {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "İcazəsiz giriş" }, { status: 401 })
   }
@@ -115,14 +114,16 @@ export async function GET() {
       status: inv.status,
       sentAt: inv.sentAt,
     })),
-    ...outgoing.map((inv) => ({
-      id: inv.id,
-      type: "outgoing" as const,
-      userId: inv.recipientId,
-      displayName: inv.recipient.profile?.displayName ?? inv.recipient.email,
-      status: inv.status,
-      sentAt: inv.sentAt,
-    })),
+    ...outgoing
+      .filter((inv) => inv.recipient !== null)
+      .map((inv) => ({
+        id: inv.id,
+        type: "outgoing" as const,
+        userId: inv.recipientId,
+        displayName: inv.recipient!.profile?.displayName ?? inv.recipient!.email,
+        status: inv.status,
+        sentAt: inv.sentAt,
+      })),
   ]
 
   return NextResponse.json({ invites })
