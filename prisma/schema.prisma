@@ -1,0 +1,258 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum ConnectionStatus {
+  ACTIVE
+  REMOVED
+}
+
+enum VisibilityMode {
+  ALL_CONNECTIONS
+  SELECTED_CONNECTIONS
+}
+
+enum AskStatus {
+  ACTIVE
+  EXPIRED
+  HIDDEN
+  REMOVED
+}
+
+enum ReplyStatus {
+  ACTIVE
+  REMOVED
+}
+
+enum NotificationType {
+  NEW_REPLY
+  CONNECTION_INVITE
+  INVITE_ACCEPTED
+}
+
+enum ReportTargetType {
+  ASK
+  REPLY
+  USER
+}
+
+enum ReportStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum ModerationActionType {
+  DISMISS
+  HIDE_CONTENT
+  REMOVE_CONTENT
+  RESTRICT_USER
+  SUSPEND_USER
+  LIFT_RESTRICTION
+}
+
+enum BlockStatus {
+  ACTIVE
+  LIFTED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  isAdmin      Boolean    @default(false)
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+  lastSeenAt   DateTime?
+
+  profile            Profile?
+  asks               Ask[]
+  replies            Reply[]
+  notifications      Notification[]
+  reportsGiven       Report[]          @relation("reporter")
+  connectionsSent    ConnectionInvite[] @relation("sender")
+  connectionsReceived ConnectionInvite[] @relation("recipient")
+  connectionsAsA     Connection[]      @relation("user_a")
+  connectionsAsB     Connection[]      @relation("user_b")
+  blocksGiven        BlockRelation[]   @relation("blocker")
+  blocksReceived     BlockRelation[]   @relation("blocked")
+  askAudiences       AskAudience[]
+  moderationActions  ModerationAction[]
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  displayName String
+  cityId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  city City? @relation(fields: [cityId], references: [id])
+}
+
+model City {
+  id   String @id @default(cuid())
+  name String
+
+  profiles Profile[]
+  asks     Ask[]
+}
+
+model Connection {
+  id        String           @id @default(cuid())
+  userAId   String
+  userBId   String
+  status    ConnectionStatus @default(ACTIVE)
+  createdAt DateTime         @default(now())
+
+  userA User @relation("user_a", fields: [userAId], references: [id], onDelete: Cascade)
+  userB User @relation("user_b", fields: [userBId], references: [id], onDelete: Cascade)
+
+  @@unique([userAId, userBId])
+}
+
+model ConnectionInvite {
+  id          String       @id @default(cuid())
+  senderId    String
+  recipientId String
+  status      InviteStatus @default(PENDING)
+  sentAt      DateTime     @default(now())
+  decidedAt   DateTime?
+
+  sender    User @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient User @relation("recipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, recipientId])
+}
+
+model Category {
+  id    String @id @default(cuid())
+  key   String @unique
+  label String
+
+  asks Ask[]
+}
+
+model Ask {
+  id             String         @id @default(cuid())
+  authorId       String
+  text           String
+  categoryId     String
+  cityId         String?
+  visibilityMode VisibilityMode @default(ALL_CONNECTIONS)
+  status         AskStatus      @default(ACTIVE)
+  createdAt      DateTime       @default(now())
+  expiresAt      DateTime
+
+  author   User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  category Category     @relation(fields: [categoryId], references: [id])
+  city     City?        @relation(fields: [cityId], references: [id])
+  replies  Reply[]
+  audience AskAudience[]
+}
+
+model AskAudience {
+  id           String @id @default(cuid())
+  askId        String
+  targetUserId String
+
+  ask        Ask  @relation(fields: [askId], references: [id], onDelete: Cascade)
+  targetUser User @relation(fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@unique([askId, targetUserId])
+}
+
+model Reply {
+  id              String      @id @default(cuid())
+  askId           String
+  authorId        String
+  note            String?
+  recommendedName String?
+  phone           String?
+  url             String?
+  status          ReplyStatus @default(ACTIVE)
+  createdAt       DateTime    @default(now())
+
+  ask    Ask  @relation(fields: [askId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  recipientId String
+  type        NotificationType
+  subjectType String
+  subjectId   String
+  isRead      Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  recipient User @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+}
+
+model Report {
+  id         String           @id @default(cuid())
+  reporterId String
+  targetType ReportTargetType
+  targetId   String
+  reasonCode String
+  note       String?
+  status     ReportStatus     @default(OPEN)
+  createdAt  DateTime         @default(now())
+
+  reporter          User               @relation("reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  moderationActions ModerationAction[]
+}
+
+model ModerationAction {
+  id          String               @id @default(cuid())
+  reportId    String
+  actorId     String
+  actionType  ModerationActionType
+  actionNote  String?
+  createdAt   DateTime             @default(now())
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  actor  User   @relation(fields: [actorId], references: [id], onDelete: Cascade)
+}
+
+model BlockRelation {
+  id        String      @id @default(cuid())
+  blockerId String
+  blockedId String
+  status    BlockStatus @default(ACTIVE)
+  createdAt DateTime    @default(now())
+
+  blocker User @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+}
+
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  userId     String?
+  name       String
+  properties Json     @default("{}")
+  createdAt  DateTime @default(now())
+}
